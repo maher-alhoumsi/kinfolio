@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import * as z from 'zod';
+import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,9 +20,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { authClient } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AuthShell } from '@/components/auth/auth-shell';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -39,26 +39,32 @@ export default function SignInView() {
   });
 
   const onSubmit = async (values: SignInValues) => {
-    await authClient.signIn.email(
-      {
-        email: values.email,
-        password: values.password,
-        callbackURL: '/',
-      },
-      {
-        onError: (ctx) => {
-          // Intercepts API failures and registers them inside the native error stack
-          form.setError('root', {
-            message:
-              ctx.error.message || 'Invalid email or password combination.',
-          });
+    try {
+      await authClient.signIn.email(
+        {
+          email: values.email,
+          password: values.password,
+          callbackURL: '/',
         },
+        {
+          onError: (ctx) => {
+            toast.error('Unable to sign in', {
+              description:
+                ctx.error.message ||
+                'Please check your email and password and try again.',
+            });
+          },
 
-        onSuccess: () => {
-          router.push('/');
+          onSuccess: () => {
+            router.replace('/');
+          },
         },
-      },
-    );
+      );
+    } catch {
+      toast.error('Unable to sign in', {
+        description: 'Something went wrong. Please try again in a moment.',
+      });
+    }
   };
 
   return (
@@ -75,15 +81,6 @@ export default function SignInView() {
 
         <CardContent className="space-y-4">
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Form-level root error rendering */}
-            {form.formState.errors.root && (
-              <Alert variant="destructive">
-                <AlertDescription>
-                  {form.formState.errors.root.message}
-                </AlertDescription>
-              </Alert>
-            )}
-
             <Controller
               control={form.control}
               name="email"
@@ -96,6 +93,7 @@ export default function SignInView() {
                     disabled={form.formState.isSubmitting}
                     {...field}
                   />
+                  <FieldError errors={[form.formState.errors.email]} />
                 </Field>
               )}
             />
@@ -112,6 +110,7 @@ export default function SignInView() {
                     disabled={form.formState.isSubmitting}
                     {...field}
                   />
+                  <FieldError errors={[form.formState.errors.password]} />
                 </Field>
               )}
             />

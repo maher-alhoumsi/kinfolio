@@ -4,14 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import * as z from 'zod';
+import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-
-import { Input } from '@/components/ui/input';
-import { authClient } from '@/lib/auth-client';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 import {
   Card,
@@ -21,9 +17,11 @@ import {
   CardContent,
   CardDescription,
 } from '@/components/ui/card';
-
-import { Field, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { authClient } from '@/lib/auth-client';
+import { Button } from '@/components/ui/button';
 import { AuthShell } from '@/components/auth/auth-shell';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 
 const signUpSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -42,26 +40,32 @@ export default function SignUpView() {
   });
 
   const onSubmit = async (values: SignUpValues) => {
-    await authClient.signUp.email(
-      {
-        email: values.email,
-        password: values.password,
-        name: values.name,
-        callbackURL: '/',
-      },
-      {
-        onError: (ctx) => {
-          form.setError('root', {
-            message:
-              ctx.error.message ||
-              'An unexpected error occurred during registration.',
-          });
+    try {
+      await authClient.signUp.email(
+        {
+          email: values.email,
+          password: values.password,
+          name: values.name,
+          callbackURL: '/',
         },
-        onSuccess: () => {
-          router.push('/');
+        {
+          onError: (ctx) => {
+            toast.error('Unable to create your account', {
+              description:
+                ctx.error.message ||
+                'Please review your details and try again.',
+            });
+          },
+          onSuccess: () => {
+            router.replace('/');
+          },
         },
-      },
-    );
+      );
+    } catch {
+      toast.error('Unable to create your account', {
+        description: 'Something went wrong. Please try again in a moment.',
+      });
+    }
   };
 
   return (
@@ -78,15 +82,6 @@ export default function SignUpView() {
 
         <CardContent className="space-y-4">
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Form-level root error rendering */}
-            {form.formState.errors.root && (
-              <Alert variant="destructive">
-                <AlertDescription>
-                  {form.formState.errors.root.message}
-                </AlertDescription>
-              </Alert>
-            )}
-
             <Controller
               control={form.control}
               name="name"
@@ -99,6 +94,7 @@ export default function SignUpView() {
                     disabled={form.formState.isSubmitting}
                     {...field}
                   />
+                  <FieldError errors={[form.formState.errors.name]} />
                 </Field>
               )}
             />
@@ -116,6 +112,7 @@ export default function SignUpView() {
                     disabled={form.formState.isSubmitting}
                     {...field}
                   />
+                  <FieldError errors={[form.formState.errors.email]} />
                 </Field>
               )}
             />
@@ -132,6 +129,7 @@ export default function SignUpView() {
                     disabled={form.formState.isSubmitting}
                     {...field}
                   />
+                  <FieldError errors={[form.formState.errors.password]} />
                 </Field>
               )}
             />
