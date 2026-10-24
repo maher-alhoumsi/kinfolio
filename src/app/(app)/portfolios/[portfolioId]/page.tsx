@@ -1,15 +1,14 @@
-import {
-  Card,
-  CardTitle,
-  CardHeader,
-  CardContent,
-  CardDescription,
-} from '@/components/ui/card';
-import { dateFormatter } from '@/lib/utils';
+import { type Role } from '@/lib/roles';
 import { requireUser } from '@/server/auth/session';
+import { listAssets } from '@/server/services/asset';
 import { getPortfolioForPage } from '@/server/auth/page-data';
 import { withPageErrorHandling } from '@/server/auth/page-error';
-import RenamePortfolioDialog from '@/components/portfolio/rename-portfolio-dialog';
+import { getPortfolioOverview } from '@/server/services/overview';
+import PortfolioActions from '@/components/portfolio/portfolio-actions';
+import PortfolioDetails from '@/components/portfolio/portfolio-details';
+import PortfolioSummary from '@/components/portfolio/portfolio-summary';
+import PortfolioHoldings from '@/components/portfolio/portfolio-holdings';
+import PortfolioAllocation from '@/components/portfolio/portfolio-allocation';
 
 interface Props {
   params: Promise<{ portfolioId: string }>;
@@ -17,65 +16,51 @@ interface Props {
 
 const PortfolioOverviewPage = async ({ params }: Props) => {
   const { portfolioId } = await params;
-
   const ctx = await withPageErrorHandling(() => requireUser());
 
   const portfolio = await withPageErrorHandling(() =>
     getPortfolioForPage(ctx.userId, portfolioId),
   );
 
+  const [overview, assets] = await withPageErrorHandling(() =>
+    Promise.all([
+      getPortfolioOverview(ctx, portfolioId),
+      listAssets(ctx, portfolioId),
+    ]),
+  );
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <CardTitle>Portfolio details</CardTitle>
-              <CardDescription className="mt-1">
-                A quick reference for this portfolio.
-              </CardDescription>
-            </div>
+      <PortfolioActions
+        assets={assets}
+        portfolioId={portfolioId}
+        role={portfolio.role as Role}
+      />
 
-            {portfolio.role === 'OWNER' && (
-              <RenamePortfolioDialog
-                portfolioId={portfolio.id}
-                currentName={portfolio.name}
-              />
-            )}
-          </div>
-        </CardHeader>
+      <PortfolioSummary
+        summary={overview.summary}
+        baseCurrency={overview.baseCurrency}
+      />
 
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Base currency
-            </p>
-            <p className="mt-1 text-sm font-medium">{portfolio.baseCurrency}</p>
-          </div>
+      <PortfolioDetails
+        id={portfolio.id}
+        name={portfolio.name}
+        role={portfolio.role as Role}
+        createdAt={portfolio.createdAt}
+        baseCurrency={portfolio.baseCurrency}
+      />
 
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Created
-            </p>
-            <p className="mt-1 text-sm font-medium">
-              {dateFormatter.format(portfolio.createdAt)}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <PortfolioAllocation
+        allocation={overview.allocation}
+        baseCurrency={overview.baseCurrency}
+      />
 
-      <Card className="border-dashed">
-        <CardContent className="py-14 text-center">
-          <h2 className="font-heading text-xl font-semibold tracking-tight">
-            Your holdings and transactions will appear here
-          </h2>
-
-          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-            This is where you&apos;ll be able to understand the full picture of
-            this portfolio.
-          </p>
-        </CardContent>
-      </Card>
+      <PortfolioHoldings
+        portfolioId={portfolioId}
+        holdings={overview.holdings}
+        role={portfolio.role as Role}
+        baseCurrency={overview.baseCurrency}
+      />
     </div>
   );
 };

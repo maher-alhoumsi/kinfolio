@@ -11,3 +11,6 @@ export const TRANSACTION_KINDS = [
   'DEPOSIT',
   'WITHDRAW',
 ] as const;
+
+export type AssetType = (typeof ASSET_TYPES)[number];
+export type TransactionKind = (typeof TRANSACTION_KINDS)[number];
