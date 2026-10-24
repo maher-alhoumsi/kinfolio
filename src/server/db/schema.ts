@@ -7,9 +7,15 @@ import {
   uuid,
   pgEnum,
   unique,
+  check,
+  AnyPgColumn,
+  numeric,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 
 import { ROLES } from '@/lib/roles';
+import { ASSET_TYPES, TRANSACTION_KINDS } from '@/lib/enums';
+import { sql } from 'drizzle-orm';
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -122,5 +128,90 @@ export const memberships = pgTable(
   (t) => [
     index('memberships_userId_idx').on(t.userId),
     unique('memberships_portfolioId_userId_key').on(t.portfolioId, t.userId),
+  ],
+);
+
+export const assetTypeEnum = pgEnum('asset_type', ASSET_TYPES);
+
+export const transactionKindEnum = pgEnum('transaction_kind', TRANSACTION_KINDS);
+
+export const assets = pgTable(
+  'assets',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    portfolioId: uuid('portfolio_id')
+      .notNull()
+      .references(() => portfolios.id, { onDelete: 'restrict' }),
+    type: assetTypeEnum('type').notNull(),
+    symbol: text('symbol'),
+    name: text('name').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('assets_portfolio_type_symbol_key').on(
+      t.portfolioId,
+      t.type,
+      t.symbol,
+    ),
+  ],
+);
+
+export const transactions = pgTable(
+  'transactions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    portfolioId: uuid('portfolio_id')
+      .notNull()
+      .references(() => portfolios.id, { onDelete: 'restrict' }),
+    assetId: uuid('asset_id')
+      .notNull()
+      .references(() => assets.id, { onDelete: 'restrict' }),
+    kind: transactionKindEnum('kind').notNull(),
+    quantity: numeric('quantity', { precision: 28, scale: 10 }).notNull(),
+    unitPrice: numeric('unit_price', { precision: 20, scale: 6 }).notNull(),
+    occurredAt: timestamp('occurred_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    note: text('note'),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+    reversesTransactionId: uuid('reverses_transaction_id')
+      .unique()
+      .references((): AnyPgColumn => transactions.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index('transactions_portfolio_occurred_idx').on(
+      t.portfolioId,
+      t.occurredAt,
+    ),
+    index('transactions_asset_idx').on(t.assetId),
+    check('transactions_quantity_positive', sql`${t.quantity} > 0`),
+    check('transactions_unit_price_positive', sql`${t.unitPrice} > 0`),
+    check(
+      'transactions_not_self_reversal',
+      sql`${t.reversesTransactionId} is distinct from ${t.id}`,
+    ),
+  ],
+);
+
+export const priceSnapshots = pgTable(
+  'price_snapshots',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    assetId: uuid('asset_id')
+      .notNull()
+      .references(() => assets.id, { onDelete: 'restrict' }),
+    price: numeric('price', { precision: 20, scale: 6 }).notNull(),
+    asOf: timestamp('as_of', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('price_snapshots_asset_as_of_idx').on(t.assetId, t.asOf),
+    check('price_snapshots_price_positive', sql`${t.price} > 0`),
   ],
 );
