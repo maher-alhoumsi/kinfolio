@@ -1,4 +1,15 @@
-import { pgTable, text, timestamp, boolean, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  text,
+  timestamp,
+  boolean,
+  index,
+  uuid,
+  pgEnum,
+  unique,
+} from 'drizzle-orm/pg-core';
+
+import { ROLES } from '@/lib/roles';
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -70,4 +81,46 @@ export const verification = pgTable(
       .notNull(),
   },
   (table) => [index('verification_identifier_idx').on(table.identifier)],
+);
+
+export const portfolios = pgTable(
+  'portfolios',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    baseCurrency: text('base_currency').notNull().default('USD'),
+
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index('portfolios_created_by_idx').on(t.createdBy)],
+);
+
+export const roleEnum = pgEnum('membership_role', ROLES);
+
+export const memberships = pgTable(
+  'memberships',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    portfolioId: uuid('portfolio_id')
+      .notNull()
+      .references(() => portfolios.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    role: roleEnum('role').notNull().default('VIEWER'),
+
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index('memberships_userId_idx').on(t.userId),
+    unique('memberships_portfolioId_userId_key').on(t.portfolioId, t.userId),
+  ],
 );
