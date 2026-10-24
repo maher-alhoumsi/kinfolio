@@ -1,0 +1,45 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+interface Props {
+  portfolioId: string;
+}
+
+const PortfolioTabs = ({ portfolioId }: Props) => {
+  const pathname = usePathname();
+
+  const tabs = [
+    { href: `/portfolios/${portfolioId}`, label: 'Overview' },
+    { href: `/portfolios/${portfolioId}/members`, label: 'Members' },
+  ];
+
+  return (
+    <nav
+      aria-label="Portfolio sections"
+      className="flex gap-5 border-b border-border"
+    >
+      {tabs.map((tab) => {
+        const active = pathname === tab.href;
+
+        return (
+          <Link
+            key={tab.href}
+            href={tab.href}
+            className={`border-b-2 pb-2 text-sm font-medium transition-colors ${
+              active
+                ? 'border-primary text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+            aria-current={active ? 'page' : undefined}
+          >
+            {tab.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+};
+
+export default PortfolioTabs;
