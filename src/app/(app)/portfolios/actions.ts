@@ -3,6 +3,7 @@
 import { requireUser } from '@/server/auth/session';
 import { createPortfolio } from '@/server/services/portfolio';
 import { runAction, type ActionResult } from '@/server/actions/run-action';
+import { revalidatePath } from 'next/cache';
 
 export type CreatePortfolioResult = ActionResult<{ id: string }>;
 
@@ -12,7 +13,13 @@ export async function createPortfolioAction(
 ): Promise<CreatePortfolioResult> {
   const result = await runAction(async () => {
     const ctx = await requireUser();
-    return createPortfolio(ctx, { name: formData.get('name') });
+
+    const portfolio = await createPortfolio(ctx, {
+      name: formData.get('name'),
+    });
+    revalidatePath('/portfolios');
+
+    return portfolio;
   });
 
   if (!result.ok) {
