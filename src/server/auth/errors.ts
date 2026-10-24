@@ -30,9 +30,12 @@ export class NotFoundError extends AppError {
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string) {
+  readonly fields?: Record<string, string>;
+
+  constructor(message: string, fields?: Record<string, string>) {
     super('VALIDATION', message);
     this.name = 'ValidationError';
+    this.fields = fields;
   }
 }
 

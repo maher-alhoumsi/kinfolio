@@ -51,7 +51,11 @@ export const addMember = async (ctx: Ctx, input: unknown) => {
     .where(eq(user.email, parsed.email))
     .limit(1);
 
-  if (!target) throw new ValidationError('No account with that email');
+  if (!target) {
+    throw new ValidationError('No account with that email', {
+      email: 'No account with that email',
+    });
+  }
 
   const [membership] = await db
     .insert(memberships)

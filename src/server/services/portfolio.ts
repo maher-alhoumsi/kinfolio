@@ -10,6 +10,7 @@ import {
 import { db } from '@/server/db';
 import { type Ctx } from '@/server/auth/session';
 import { assertRole } from '@/server/auth/policy';
+import { NotFoundError } from '@/server/auth/errors';
 import { memberships, portfolios } from '@/server/db/schema';
 
 export const createPortfolio = async (ctx: Ctx, input: unknown) => {
@@ -55,7 +56,11 @@ export const listMyPortfolios = async (ctx: Ctx) => {
 };
 
 export const getPortfolio = async (ctx: Ctx, id: string) => {
-  await assertRole({ ctx, portfolioId: id, requiredRole: 'VIEWER' });
+  const role = await assertRole({
+    ctx,
+    portfolioId: id,
+    requiredRole: 'VIEWER',
+  });
 
   const [portfolio] = await db
     .select()
@@ -63,7 +68,9 @@ export const getPortfolio = async (ctx: Ctx, id: string) => {
     .where(eq(portfolios.id, id))
     .limit(1);
 
-  return portfolio;
+  if (!portfolio) throw new NotFoundError();
+
+  return { ...portfolio, role };
 };
 
 export const renamePortfolio = async (ctx: Ctx, input: unknown) => {
