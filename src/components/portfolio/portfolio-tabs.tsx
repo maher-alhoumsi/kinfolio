@@ -13,6 +13,7 @@ const PortfolioTabs = ({ portfolioId }: Props) => {
   const tabs = [
     { href: `/portfolios/${portfolioId}`, label: 'Overview' },
     { href: `/portfolios/${portfolioId}/transactions`, label: 'Transactions' },
+    { href: `/portfolios/${portfolioId}/assistant`, label: 'Assistant' },
     { href: `/portfolios/${portfolioId}/members`, label: 'Members' },
   ];
 
