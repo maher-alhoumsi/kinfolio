@@ -1,36 +1,144 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kinfolio
 
-## Getting Started
+Kinfolio is a household portfolio tracker with portfolio memberships and
+Owner, Editor, and Viewer roles. It records a multi-asset ledger and derives
+holdings, allocation, and portfolio summaries from append-only transactions.
+An embedded AI assistant can read the same portfolio data and can propose
+transactions for a user to review and confirm. Authorization is enforced by
+the same server services for the UI and the assistant.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Portfolios and memberships with Owner, Editor, and Viewer roles
+- Multi-asset ledger for stocks, crypto, real estate, and cash
+- Append-only transactions with derived holdings and allocation summaries
+- Mock price refresh
+- Portfolio dashboard
+- AI assistant with read tools and a propose-then-confirm write path
+- Audit log available to portfolio owners
+
+## Architecture
+
+```text
+App (Next.js UI, server actions, API routes)
+  -> Services (authorization, validation, transactions, audit)
+       -> Database (PostgreSQL via Drizzle)
+
+Domain (pure ledger and holdings calculations)
+Agent tools (closed-over context) -> the same services
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Every entry point goes through services, and every service starts with
+`parse -> assertRole -> work`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The agent tools are closed over the authenticated `ctx` and `portfolioId`, so
+the model cannot choose a different user or portfolio. Writes are proposals
+stored on the server rather than changes made by the model. Confirmation is a
+normal server action whose write input is only a proposal id. The server
+rechecks the proposal, role, and state before applying it. The transaction and
+its audit row are written in the same database transaction.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup
 
-## Learn More
+### Prerequisites
 
-To learn more about Next.js, take a look at the following resources:
+- Node.js
+- A PostgreSQL connection string, such as a free Neon database or a local
+  PostgreSQL instance
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Install dependencies:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm ci
+```
 
-## Deploy on Vercel
+Copy the example environment file and fill every variable:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+copy .env.example .env.local
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The variables are:
+
+- `BETTER_AUTH_SECRET`: a random secret for Better Auth. Generate one with
+  Node.js:
+
+  ```bash
+  node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+  ```
+
+- `BETTER_AUTH_URL`: for local development, `http://localhost:3000`
+- `DATABASE_URL`: your PostgreSQL connection string
+- `DATABASE_URL_POOLED`: your pooled PostgreSQL connection string
+- `OPENAI_API_KEY`: optional key for the assistant
+- `AI_MODEL`: optional model name; it defaults to `gpt-4o-mini`
+
+Apply the schema, seed the database, and start the development server:
+
+```bash
+npm run db:push
+npm run db:seed
+npm run dev
+```
+
+`OPENAI_API_KEY` and `AI_MODEL` are optional. Without an OpenAI model key, the
+assistant chat cannot answer, but the rest of the application still works.
+This checkout does not currently contain an `agent:demo` script or
+`src/server/agent/demo-permissions.ts`; therefore there is no model-free
+`npm run agent:demo` command to run. The permission model is implemented by
+the shared service and agent-tool paths described above.
+
+## Seeded logins
+
+The seed script creates these users with the password `Password123!`:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Owner | `owner@kinfolio.test` | `Password123!` |
+| Editor | `editor@kinfolio.test` | `Password123!` |
+| Viewer | `viewer@kinfolio.test` | `Password123!` |
+
+It also creates the `Household wealth` portfolio, memberships, and sample
+cash, real estate, stock, and crypto data. Re-running the seed exits without
+changes when that portfolio already exists.
+
+## Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the Next.js development server |
+| `npm run build` | Build the application |
+| `npm run start` | Start the built application |
+| `npm run lint` | Run ESLint |
+| `npm run db:push` | Apply the Drizzle schema to the database |
+| `npm run db:seed` | Seed users, portfolio data, and price snapshots |
+
+## Scope decisions
+
+### Built
+
+The project includes role-based portfolio access, shared service-layer
+authorization, append-only transactions, derived holdings and allocation,
+mock pricing, dashboard views, an assistant with permission-bound read tools,
+server-side transaction proposals and confirmation, and owner-only audit-log
+access.
+
+### Deferred on purpose
+
+- **Background job queue:** price refresh is a plain function; production
+  would use a queue worker.
+- **Realtime updates:** updates use the existing server-rendered/action flow.
+- **Transaction reversal UI:** the schema and holdings logic are designed for
+  reversals, but there is no reversal UI.
+- **Timeline-aware balance checks:** the current balance is checked under a
+  row lock.
+- **Real market data:** prices are intentionally mocked.
+- **Multi-currency conversion:** the base currency is fixed to USD.
+- **Email verification and password reset:** these flows are not included.
+- **Automated test suite:** no automated test suite is included.
+
+## Known limitations
+
+- Chat history is not persisted.
+- Proposals expire after 15 minutes.
+- Each portfolio can have one cash asset.
