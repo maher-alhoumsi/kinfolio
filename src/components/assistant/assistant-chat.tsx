@@ -73,7 +73,12 @@ const AssistantChat = ({ portfolioId, portfolioName }: Props) => {
           <AssistantEmptyState onSuggestion={send} disabled={isStreaming} />
         )}
 
-        {messages.length > 0 && <AssistantMessageList messages={messages} />}
+        {messages.length > 0 && (
+          <AssistantMessageList
+            messages={messages}
+            portfolioId={portfolioId}
+          />
+        )}
 
         {status === 'submitted' && (
           <p className="text-sm text-muted-foreground" dir="auto">

@@ -4,8 +4,8 @@ import { redirect } from 'next/navigation';
 
 import {
   AppError,
-  ValidationError,
   type ErrorCode,
+  ValidationError,
 } from '@/server/auth/errors';
 
 export type ActionResult<T> =

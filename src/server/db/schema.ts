@@ -11,6 +11,7 @@ import {
   AnyPgColumn,
   numeric,
   uniqueIndex,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 
 import { ROLES } from '@/lib/roles';
@@ -133,7 +134,10 @@ export const memberships = pgTable(
 
 export const assetTypeEnum = pgEnum('asset_type', ASSET_TYPES);
 
-export const transactionKindEnum = pgEnum('transaction_kind', TRANSACTION_KINDS);
+export const transactionKindEnum = pgEnum(
+  'transaction_kind',
+  TRANSACTION_KINDS,
+);
 
 export const assets = pgTable(
   'assets',
@@ -213,5 +217,63 @@ export const priceSnapshots = pgTable(
   (t) => [
     index('price_snapshots_asset_as_of_idx').on(t.assetId, t.asOf),
     check('price_snapshots_price_positive', sql`${t.price} > 0`),
+  ],
+);
+
+export const auditActorKindEnum = pgEnum('audit_actor_kind', ['USER', 'AGENT']);
+export const proposalStatusEnum = pgEnum('proposal_status', [
+  'PENDING',
+  'CONFIRMED',
+  'CANCELLED',
+]);
+
+export const auditLog = pgTable(
+  'audit_log',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    portfolioId: uuid('portfolio_id')
+      .notNull()
+      .references(() => portfolios.id, { onDelete: 'restrict' }),
+    actorUserId: text('actor_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+    actorKind: auditActorKindEnum('actor_kind').notNull(),
+    action: text('action').notNull(),
+    payload: jsonb('payload')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index('audit_log_portfolio_created_idx').on(t.portfolioId, t.createdAt),
+  ],
+);
+
+export const agentProposals = pgTable(
+  'agent_proposals',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    portfolioId: uuid('portfolio_id')
+      .notNull()
+      .references(() => portfolios.id, { onDelete: 'restrict' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+    input: jsonb('input').$type<Record<string, unknown>>().notNull(),
+    status: proposalStatusEnum('status').notNull().default('PENDING'),
+    transactionId: uuid('transaction_id').references(() => transactions.id, {
+      onDelete: 'restrict',
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  },
+  (t) => [
+    index('agent_proposals_lookup_idx').on(t.portfolioId, t.userId, t.status),
   ],
 );
