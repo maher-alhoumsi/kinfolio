@@ -7,7 +7,7 @@ import { memberships } from '@/server/db/schema';
 import { portfolioIdSchema } from '@/lib/schemas/portfolio';
 
 import { Ctx } from './session';
-import { hasAtLeast, type Role } from './roles';
+import { hasAtLeast, type Role } from '@/lib/roles';
 import { ForbiddenError, NotFoundError } from './errors';
 
 interface AssertRoleOptions {

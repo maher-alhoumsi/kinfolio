@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:push": "drizzle-kit push",
-    "db:seed": "tsx --conditions=react-server --env-file=.env.local src/server/db/seed.ts"
+    "db:seed": "tsx --conditions=react-server --env-file=.env.local src/server/db/seed.ts",
+    "agent:demo": "tsx --conditions=react-server --env-file=.env.local src/server/agent/demo-permissions.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.102",
