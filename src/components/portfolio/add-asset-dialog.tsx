@@ -76,7 +76,8 @@ const AddAssetDialog = ({ portfolioId, role }: Props) => {
       if (!result.ok) {
         if (result.code === 'VALIDATION') setFields(result.fields);
         else if (result.code === 'CONFLICT') setConflict(result.message);
-        else toast.error('Unable to add asset', { description: result.message });
+        else
+          toast.error('Unable to add asset', { description: result.message });
         return;
       }
 
@@ -122,7 +123,7 @@ const AddAssetDialog = ({ portfolioId, role }: Props) => {
               }
             >
               <SelectTrigger id="asset-type" className="w-full">
-                <SelectValue />
+                <SelectValue>{typeLabels[form.type]}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {ASSET_TYPES.map((type) => (
@@ -132,6 +133,7 @@ const AddAssetDialog = ({ portfolioId, role }: Props) => {
                 ))}
               </SelectContent>
             </Select>
+
             {fields?.type && (
               <p className="text-sm text-destructive">{fields.type}</p>
             )}

@@ -61,9 +61,9 @@ const getEmptyForm = () => ({
 const AddTransactionDialog = ({ portfolioId, role, assets }: Props) => {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(getEmptyForm);
-  const [fields, setFields] = useState<Record<string, string>>();
   const [conflict, setConflict] = useState<string>();
   const [pending, startTransition] = useTransition();
+  const [fields, setFields] = useState<Record<string, string>>();
 
   const selectedAsset = useMemo(
     () => assets.find((asset) => asset.id === form.assetId),
@@ -90,9 +90,9 @@ const AddTransactionDialog = ({ portfolioId, role, assets }: Props) => {
         assetId: form.assetId,
         kind: form.kind,
         quantity: form.quantity,
-        unitPrice: selectedAsset?.type === 'CASH' ? undefined : form.unitPrice,
         occurredAt: form.occurredAt,
         note: form.note.trim() || undefined,
+        unitPrice: selectedAsset?.type === 'CASH' ? undefined : form.unitPrice,
       });
 
       if (!result.ok) {
@@ -102,6 +102,7 @@ const AddTransactionDialog = ({ portfolioId, role, assets }: Props) => {
           toast.error('Unable to add transaction', {
             description: result.message,
           });
+
         return;
       }
 
@@ -147,8 +148,15 @@ const AddTransactionDialog = ({ portfolioId, role, assets }: Props) => {
               }}
             >
               <SelectTrigger id="transaction-asset" className="w-full">
-                <SelectValue placeholder="Choose an asset" />
+                <SelectValue placeholder="Choose an asset">
+                  {selectedAsset
+                    ? selectedAsset.symbol
+                      ? `${selectedAsset.symbol} — ${selectedAsset.name}`
+                      : selectedAsset.name
+                    : undefined}
+                </SelectValue>
               </SelectTrigger>
+
               <SelectContent>
                 {assets.map((asset) => (
                   <SelectItem key={asset.id} value={asset.id}>
@@ -159,6 +167,7 @@ const AddTransactionDialog = ({ portfolioId, role, assets }: Props) => {
                 ))}
               </SelectContent>
             </Select>
+
             {fields?.assetId && (
               <p className="text-sm text-destructive">{fields.assetId}</p>
             )}
@@ -166,6 +175,7 @@ const AddTransactionDialog = ({ portfolioId, role, assets }: Props) => {
 
           <div className="space-y-2">
             <Label htmlFor="transaction-kind">Type</Label>
+
             <Select
               value={form.kind}
               onValueChange={(value) =>
@@ -187,6 +197,7 @@ const AddTransactionDialog = ({ portfolioId, role, assets }: Props) => {
                 ))}
               </SelectContent>
             </Select>
+
             {fields?.kind && (
               <p className="text-sm text-destructive">{fields.kind}</p>
             )}
@@ -196,10 +207,10 @@ const AddTransactionDialog = ({ portfolioId, role, assets }: Props) => {
             <Label htmlFor="transaction-quantity">Quantity</Label>
             <Input
               required
-              id="transaction-quantity"
-              value={form.quantity}
               disabled={pending}
               inputMode="decimal"
+              value={form.quantity}
+              id="transaction-quantity"
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
@@ -207,6 +218,7 @@ const AddTransactionDialog = ({ portfolioId, role, assets }: Props) => {
                 }))
               }
             />
+
             {fields?.quantity && (
               <p className="text-sm text-destructive">{fields.quantity}</p>
             )}
@@ -215,12 +227,13 @@ const AddTransactionDialog = ({ portfolioId, role, assets }: Props) => {
           {selectedAsset?.type !== 'CASH' && (
             <div className="space-y-2">
               <Label htmlFor="transaction-unit-price">Unit price</Label>
+
               <Input
                 required
-                id="transaction-unit-price"
-                value={form.unitPrice}
                 disabled={pending}
                 inputMode="decimal"
+                value={form.unitPrice}
+                id="transaction-unit-price"
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
@@ -238,11 +251,11 @@ const AddTransactionDialog = ({ portfolioId, role, assets }: Props) => {
             <Label htmlFor="transaction-date">Date</Label>
             <Input
               required
-              id="transaction-date"
               type="date"
-              value={form.occurredAt}
               max={today()}
               disabled={pending}
+              id="transaction-date"
+              value={form.occurredAt}
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
@@ -250,6 +263,7 @@ const AddTransactionDialog = ({ portfolioId, role, assets }: Props) => {
                 }))
               }
             />
+
             {fields?.occurredAt && (
               <p className="text-sm text-destructive">{fields.occurredAt}</p>
             )}
@@ -258,10 +272,10 @@ const AddTransactionDialog = ({ portfolioId, role, assets }: Props) => {
           <div className="space-y-2">
             <Label htmlFor="transaction-note">Note</Label>
             <Input
-              id="transaction-note"
+              maxLength={280}
               value={form.note}
               disabled={pending}
-              maxLength={280}
+              id="transaction-note"
               onChange={(event) =>
                 setForm((current) => ({ ...current, note: event.target.value }))
               }
@@ -286,6 +300,7 @@ const AddTransactionDialog = ({ portfolioId, role, assets }: Props) => {
             >
               Cancel
             </Button>
+
             <Button type="submit" disabled={pending || !selectedAsset}>
               {pending ? (
                 <>

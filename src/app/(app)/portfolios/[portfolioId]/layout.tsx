@@ -40,7 +40,7 @@ const PortfolioLayout = async ({ children, params }: Props) => {
               <RoleBadge role={portfolio.role} />
             </div>
           </div>
-          <PortfolioTabs portfolioId={portfolioId} />
+          <PortfolioTabs portfolioId={portfolioId} role={portfolio.role} />
         </div>
       </div>
 

@@ -10,8 +10,8 @@ import { hasAtLeast, type Role } from '@/lib/roles';
 import { refreshPricesAction } from '@/app/(app)/portfolios/[portfolioId]/data-actions';
 
 interface Props {
-  portfolioId: string;
   role: Role;
+  portfolioId: string;
 }
 
 const RefreshPricesButton = ({ portfolioId, role }: Props) => {
@@ -38,11 +38,7 @@ const RefreshPricesButton = ({ portfolioId, role }: Props) => {
 
   return (
     <Button variant="outline" onClick={refresh} disabled={pending}>
-      {pending ? (
-        <Loader2 className="animate-spin" />
-      ) : (
-        <RefreshCw />
-      )}
+      {pending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
       {pending ? 'Refreshing...' : 'Refresh prices'}
     </Button>
   );

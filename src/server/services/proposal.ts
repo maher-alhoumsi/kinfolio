@@ -74,7 +74,13 @@ export const createTransactionProposal = async (
       actorUserId: ctx.userId,
       actorKind: 'AGENT',
       action: 'proposal.created',
-      payload: { proposalId: proposal.id },
+      payload: {
+        proposalId: proposal.id,
+        assetId: parsed.assetId,
+        kind: parsed.kind,
+        quantity: parsed.quantity,
+        unitPrice: asset.type === 'CASH' ? '1' : parsed.unitPrice,
+      },
     });
 
     return {
