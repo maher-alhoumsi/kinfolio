@@ -3,11 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import type { Role } from '@/lib/roles';
+
 interface Props {
   portfolioId: string;
+  role: Role;
 }
 
-const PortfolioTabs = ({ portfolioId }: Props) => {
+const PortfolioTabs = ({ portfolioId, role }: Props) => {
   const pathname = usePathname();
 
   const tabs = [
@@ -15,6 +18,9 @@ const PortfolioTabs = ({ portfolioId }: Props) => {
     { href: `/portfolios/${portfolioId}/transactions`, label: 'Transactions' },
     { href: `/portfolios/${portfolioId}/assistant`, label: 'Assistant' },
     { href: `/portfolios/${portfolioId}/members`, label: 'Members' },
+    ...(role === 'OWNER'
+      ? [{ href: `/portfolios/${portfolioId}/activity`, label: 'Activity' }]
+      : []),
   ];
 
   return (
