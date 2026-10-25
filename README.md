@@ -70,8 +70,11 @@ The variables are:
 - `BETTER_AUTH_URL`: for local development, `http://localhost:3000`
 - `DATABASE_URL`: your PostgreSQL connection string
 - `DATABASE_URL_POOLED`: your pooled PostgreSQL connection string
-- `OPENAI_API_KEY`: optional key for the assistant
-- `AI_MODEL`: optional model name; it defaults to `gpt-4o-mini`
+- `AI_PROVIDER`: `anthropic` or `openai`; it defaults to `anthropic`
+- `ANTHROPIC_API_KEY`: optional Anthropic key for the assistant
+- `OPENAI_API_KEY`: optional OpenAI key for the assistant
+- `AI_MODEL`: optional model name; it defaults to `claude-haiku-5-5` for
+  Anthropic and `gpt-4o-mini` for OpenAI
 
 Apply the schema, seed the database, and start the development server:
 
@@ -81,12 +84,14 @@ npm run db:seed
 npm run dev
 ```
 
-`OPENAI_API_KEY` and `AI_MODEL` are optional. Without an OpenAI model key, the
-assistant chat cannot answer, but the rest of the application still works.
-This checkout does not currently contain an `agent:demo` script or
-`src/server/agent/demo-permissions.ts`; therefore there is no model-free
-`npm run agent:demo` command to run. The permission model is implemented by
-the shared service and agent-tool paths described above.
+The assistant needs either `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, selected
+with `AI_PROVIDER`. Without the selected provider's key, the assistant chat
+cannot answer, but the rest of the application still works. The model-free
+permission checks can still be run with:
+
+```bash
+npm run agent:demo
+```
 
 ## Seeded logins
 

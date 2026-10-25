@@ -47,7 +47,9 @@ export async function changeMemberRoleAction(
 ): Promise<PortfolioActionResult> {
   return runAction(async () => {
     const ctx = await requireUser();
+
     await changeMemberRole(ctx, { portfolioId, targetUserId, role });
+
     revalidatePath(`/portfolios/${portfolioId}/members`);
     revalidatePath(`/portfolios/${portfolioId}`, 'layout');
   });
