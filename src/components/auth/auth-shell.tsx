@@ -57,7 +57,7 @@ export function AuthShell({ children, eyebrow, title, description }: Props) {
       </section>
 
       <section className="flex items-center justify-center px-5 py-10 sm:px-8">
-        <div className="w-full max-w-[430px]">
+        <div className="w-full max-w-107.5">
           <div className="mb-8 flex items-center justify-between lg:hidden">
             <Link
               href="/"

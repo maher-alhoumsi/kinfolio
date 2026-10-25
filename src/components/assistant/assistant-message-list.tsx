@@ -1,15 +1,20 @@
 import { type UIMessage } from 'ai';
 
 import { cn } from '@/lib/utils';
+import ProposalCard, {
+  type TransactionProposalSummary,
+} from '@/components/assistant/proposal-card';
 import { toolLabels } from '@/components/assistant/assistant-constants';
 
 type ToolPart = {
   type: string;
   state?: string;
   toolName?: string;
+  output?: unknown;
 };
 
 interface Props {
+  portfolioId: string;
   messages: UIMessage[];
 }
 
@@ -18,6 +23,38 @@ const isToolPart = (part: UIMessage['parts'][number]): boolean =>
 
 const getToolPart = (part: UIMessage['parts'][number]): ToolPart =>
   part as ToolPart;
+
+type ProposalOutput = {
+  proposalId: string;
+  expiresAt: string;
+  summary: TransactionProposalSummary;
+};
+
+const isProposalOutput = (output: unknown): output is ProposalOutput => {
+  if (typeof output !== 'object' || output === null) return false;
+
+  const value = output as Record<string, unknown>;
+  const summary =
+    typeof value.summary === 'object' && value.summary !== null
+      ? (value.summary as Record<string, unknown>)
+      : undefined;
+
+  return (
+    typeof value.proposalId === 'string' &&
+    typeof value.expiresAt === 'string' &&
+    summary !== undefined &&
+    typeof summary.assetName === 'string' &&
+    (typeof summary.assetSymbol === 'string' || summary.assetSymbol === null) &&
+    typeof summary.kind === 'string' &&
+    typeof summary.quantity === 'string' &&
+    typeof summary.occurredAt === 'string'
+  );
+};
+
+const hasToolError = (output: unknown): output is { error: string } =>
+  typeof output === 'object' &&
+  output !== null &&
+  typeof (output as Record<string, unknown>).error === 'string';
 
 const ToolStatus = ({ part }: { part: ToolPart }) => {
   const toolName = part.toolName ?? part.type.replace(/^tool-/, '');
@@ -42,7 +79,13 @@ const ToolStatus = ({ part }: { part: ToolPart }) => {
   );
 };
 
-const AssistantMessage = ({ message }: { message: UIMessage }) => (
+const AssistantMessage = ({
+  message,
+  portfolioId,
+}: {
+  message: UIMessage;
+  portfolioId: string;
+}) => (
   <div
     className={cn(
       'flex',
@@ -72,21 +115,52 @@ const AssistantMessage = ({ message }: { message: UIMessage }) => (
 
         if (!isToolPart(part)) return null;
 
-        return (
-          <ToolStatus
-            key={`${message.id}-${index}`}
-            part={getToolPart(part)}
-          />
-        );
+        const toolPart = getToolPart(part);
+        const toolName =
+          toolPart.toolName ?? toolPart.type.replace(/^tool-/, '');
+
+        if (
+          toolName === 'proposeTransaction' &&
+          toolPart.state === 'output-available'
+        ) {
+          if (hasToolError(toolPart.output)) {
+            return (
+              <span
+                className="inline-flex rounded-full border border-destructive/30 px-2 py-1 text-xs text-destructive"
+                key={`${message.id}-${index}`}
+              >
+                Unable to create proposal
+              </span>
+            );
+          }
+
+          if (isProposalOutput(toolPart.output)) {
+            return (
+              <ProposalCard
+                key={`${message.id}-${index}`}
+                portfolioId={portfolioId}
+                proposal={toolPart.output.summary}
+                proposalId={toolPart.output.proposalId}
+                expiresAt={toolPart.output.expiresAt}
+              />
+            );
+          }
+        }
+
+        return <ToolStatus key={`${message.id}-${index}`} part={toolPart} />;
       })}
     </div>
   </div>
 );
 
-const AssistantMessageList = ({ messages }: Props) => (
+const AssistantMessageList = ({ messages, portfolioId }: Props) => (
   <>
     {messages.map((message) => (
-      <AssistantMessage key={message.id} message={message} />
+      <AssistantMessage
+        key={message.id}
+        message={message}
+        portfolioId={portfolioId}
+      />
     ))}
   </>
 );

@@ -8,4 +8,5 @@ export const toolLabels: Record<string, string> = {
   getPortfolioOverview: 'Reading portfolio overview...',
   listRecentTransactions: 'Reading recent transactions...',
   listAssets: 'Reading portfolio assets...',
+  proposeTransaction: 'Preparing transaction proposal...',
 };
