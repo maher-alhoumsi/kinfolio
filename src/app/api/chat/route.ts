@@ -153,8 +153,8 @@ export async function POST(request: Request) {
     const result = streamText({
       tools,
       model: getModel(),
-      maxOutputTokens: MAX_OUTPUT_TOKENS,
       stopWhen: stepCountIs(5),
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
       system: buildSystemPrompt({ role: portfolio.role }),
       messages: await convertToModelMessages(parsed.data.messages.slice(-20), {
         tools,

@@ -12,6 +12,7 @@
     "agent:demo": "tsx --conditions=react-server --env-file=.env.local src/server/agent/demo-permissions.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.88",
     "@ai-sdk/openai": "^4.0.102",
     "@ai-sdk/react": "^4.0.157",
     "@base-ui/react": "^1.9.0",

@@ -11,7 +11,9 @@ interface Props {
 
 const MembersPage = async ({ params }: Props) => {
   const { portfolioId } = await params;
+
   const ctx = await withPageErrorHandling(() => requireUser());
+
   const members = await withPageErrorHandling(() =>
     listMembers(ctx, portfolioId),
   );
